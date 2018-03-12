@@ -1,0 +1,6 @@
+
+a3/binder
+*.o
+a3/client
+a3/librpc.a
+a3/server
