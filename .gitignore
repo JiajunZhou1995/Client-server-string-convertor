@@ -4,3 +4,5 @@ a3/binder
 a3/client
 a3/librpc.a
 a3/server
+a3/.vscode/launch.json
+a3/.vscode/tasks.json
