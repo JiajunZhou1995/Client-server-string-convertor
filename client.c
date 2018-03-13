@@ -1,7 +1,7 @@
 /*
  * client.c
- * 
- * This file is the client program, 
+ *
+ * This file is the client program,
  * which prepares the arguments, calls "rpcCall", and checks the returns.
  */
 
@@ -27,7 +27,7 @@ int main() {
   argTypes0[1] = (1 << ARG_INPUT) | (ARG_INT << 16);
   argTypes0[2] = (1 << ARG_INPUT) | (ARG_INT << 16);
   argTypes0[3] = 0;
-    
+
   args0 = (void **)malloc(count0 * sizeof(void *));
   args0[0] = (void *)&return0;
   args0[1] = (void *)&a0;
@@ -42,21 +42,21 @@ int main() {
   long return1;
   int argTypes1[count1 + 1];
   void **args1;
-    
+
   argTypes1[0] = (1 << ARG_OUTPUT) | (ARG_LONG << 16);
   argTypes1[1] = (1 << ARG_INPUT) | (ARG_CHAR << 16);
   argTypes1[2] = (1 << ARG_INPUT) | (ARG_SHORT << 16);
   argTypes1[3] = (1 << ARG_INPUT) | (ARG_INT << 16);
   argTypes1[4] = (1 << ARG_INPUT) | (ARG_LONG << 16);
   argTypes1[5] = 0;
-    
+
   args1 = (void **)malloc(count1 * sizeof(void *));
   args1[0] = (void *)&return1;
   args1[1] = (void *)&a1;
   args1[2] = (void *)&b1;
   args1[3] = (void *)&c1;
   args1[4] = (void *)&d1;
-    
+
   /* prepare the arguments for f2 */
   float a2 = 3.14159;
   double b2 = 1234.1001;
@@ -99,21 +99,21 @@ int main() {
   args4 = (void **)malloc(count4 * sizeof(void *));
   args4[0] = (void *)a4;
 
-  /* rpcCalls */  int s0 = rpcCall("f0", argTypes0, args0);
+  /* rpcCalls */
+  int s0 = rpcCall("f0", argTypes0, args0);
   /* test the return f0 */
   printf("\nEXPECTED return of f0 is: %d\n", a0 + b0);
-  if (s0 >= 0) { 
+  if (s0 >= 0) {
     printf("ACTUAL return of f0 is: %d\n", *((int *)(args0[0])));
   }
   else {
     printf("Error: %d\n", s0);
   }
 
-
   int s1 = rpcCall("f1", argTypes1, args1);
   /* test the return of f1 */
   printf("\nEXPECTED return of f1 is: %ld\n", a1 + b1 * c1 - d1);
-  if (s1 >= 0) { 
+  if (s1 >= 0) {
     printf("ACTUAL return of f1 is: %ld\n", *((long *)(args1[0])));
   }
   else {
@@ -148,13 +148,14 @@ int main() {
   }
   else {
     printf("Error: %d\n", s3);
-  } 
+  }
 
   int s4 = rpcCall("f4", argTypes4, args4);
   /* test the return of f4 */
   printf("\ncalling f4 to print an non existed file on the server");
   printf("\nEXPECTED return of f4: some integer other than 0");
   printf("\nACTUAL return of f4: %d\n", s4);
+
 
   /* rpcTerminate */
   printf("\ndo you want to terminate? y/n: ");
@@ -164,7 +165,3 @@ int main() {
   /* end of client.c */
   return 0;
 }
-
-
-
-
