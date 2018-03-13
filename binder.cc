@@ -20,7 +20,7 @@
 
 /*
 *	Sends the message to socket fd with package size of 64 bytes each
-* returns SUCCESS is execution did not encounter error
+* returns 0 is execution did not encounter error
 * else return the error status code
 */
 int sendMessage(int socket_fd, unsigned int data_len, MessageType msg_type, char msg_data[])
@@ -30,7 +30,7 @@ int sendMessage(int socket_fd, unsigned int data_len, MessageType msg_type, char
     send(socket_fd, &data_len, sizeof(int), 0);
     send(socket_fd, &msg_type, sizeof(MessageType), 0);
     send(socket_fd, msg_data, data_len - sizeof(int) - sizeof(MessageType), 0);
-    return SUCCESS;
+    return 0;
 }
 
 int receiveMessage(int socket_fd, int expect_len, char buf[])
@@ -42,13 +42,13 @@ int receiveMessage(int socket_fd, int expect_len, char buf[])
 		if(rcv_len == 0)
 			break;
 		else if(rcv_len < 0)
-			return RECEIVE_ERROR;
+			return -404;
 
 		expect_len -= rcv_len;
 		ptr += rcv_len;
 	}
 
-	return SUCCESS;
+	return 0;
 }
 
 struct FuncSignature {
@@ -135,7 +135,7 @@ void handleRegisterRequest(int clientSocketFd, int msgLength) {
     char responseMsg [sizeof(int)];
     // reads message to buffer
     int status = receiveMessage(clientSocketFd, msgLength, buffer);
-    if (status == RECEIVE_ERROR) {
+    if (status == -404) {
         // corrupt message
         reason = MESSAGE_CORRUPTED;
         memcpy(responseMsg, &reason, sizeof(int));
@@ -194,7 +194,7 @@ void handleLocationRequest(int clientSocketFd, int msgLength) {
     char buffer[msgLength];
     // read message to buffer
     int status = receiveMessage(clientSocketFd, msgLength, buffer);
-    if (status == RECEIVE_ERROR) {
+    if (status == -404) {
         // corrupt message
         char responseMsg [sizeof(int)];
         ReasonCode reason = MESSAGE_CORRUPTED;
