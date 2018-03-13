@@ -2,3 +2,5 @@ binder
 client
 librpc.a
 server
+*.o
+*.pdf
