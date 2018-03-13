@@ -2,6 +2,10 @@ binder
 client
 librpc.a
 server
-*.o
-*.pdf
+binder.o
+client.o
+rpc.o
+server.o
+server_functions.o
+server_function_skels.o
 .vscode/settings.json
