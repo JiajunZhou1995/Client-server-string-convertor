@@ -4,3 +4,4 @@ librpc.a
 server
 *.o
 *.pdf
+.vscode/settings.json
