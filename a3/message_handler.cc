@@ -88,43 +88,43 @@ void handle_node_disconnect(int sock, struct binder_db* db, struct server_sock_d
     }
 }
 
-void handle_cache_loc_request_message(struct binder_db * db, int node) {
-    struct LOC_S_Message* ls = NULL;
-#ifdef DEBUG
-    cerr << "handle cache loc r msg" << endl;
-    cerr << "node when receiving :" <<node <<endl;
-#endif
-    struct C_LOC_R_Message *lr = C_LOC_R_Message::read(node);
-    if (lr == NULL) {
-        cerr << "error in reading cache loc_request message" << endl;
-    }
-#ifdef DEBUG
-    cerr << "successfully read cache loc r msg" << endl;
-    cerr << "proc name :" << lr->procedure_name<<endl;
-#endif
-    vector<struct R_Message*> a = db->find_all(lr);
-    int size = a.size();
-#ifdef DEBUG
-    cerr << "size of results :" << size << endl;
-    cerr << "node when sending :" <<node <<endl;
-#endif
-    int status = send(node, &size, sizeof(int), 0);
-    if (status < 0) {
-        cerr << "error in sending the size of the cache log request response" << endl;
-        return;
-    }
-    for (vector<struct R_Message *>::iterator it= a.begin(); it!=a.end(); ++it) {
-#ifdef DEBUG 
-        cerr << "server_identifier of a result: "<< (*it)->server_identifier <<endl;
-        cerr << "port of a result: "<< (*it)->port <<endl;
-#endif
-        char* server_identifier = new char[256];
-        strncpy(server_identifier, (*it)->server_identifier, 256);
-        ls = new LOC_S_Message(server_identifier, (*it)->port);
-#ifdef DEBUG
-        cerr << "server_identifier of loc s msg before sending: "<< ls->server_identifier <<endl;
-        cerr << "port of loc s msg before sending: "<< ls->port <<endl;
-#endif        
-        ls->sendmsg(node);
-    }
-}
+// void handle_cache_loc_request_message(struct binder_db * db, int node) {
+//     struct LOC_S_Message* ls = NULL;
+// #ifdef DEBUG
+//     cerr << "handle cache loc r msg" << endl;
+//     cerr << "node when receiving :" <<node <<endl;
+// #endif
+//     struct C_LOC_R_Message *lr = C_LOC_R_Message::read(node);
+//     if (lr == NULL) {
+//         cerr << "error in reading cache loc_request message" << endl;
+//     }
+// #ifdef DEBUG
+//     cerr << "successfully read cache loc r msg" << endl;
+//     cerr << "proc name :" << lr->procedure_name<<endl;
+// #endif
+//     vector<struct R_Message*> a = db->find_all(lr);
+//     int size = a.size();
+// #ifdef DEBUG
+//     cerr << "size of results :" << size << endl;
+//     cerr << "node when sending :" <<node <<endl;
+// #endif
+//     int status = send(node, &size, sizeof(int), 0);
+//     if (status < 0) {
+//         cerr << "error in sending the size of the cache log request response" << endl;
+//         return;
+//     }
+//     for (vector<struct R_Message *>::iterator it= a.begin(); it!=a.end(); ++it) {
+// #ifdef DEBUG 
+//         cerr << "server_identifier of a result: "<< (*it)->server_identifier <<endl;
+//         cerr << "port of a result: "<< (*it)->port <<endl;
+// #endif
+//         char* server_identifier = new char[256];
+//         strncpy(server_identifier, (*it)->server_identifier, 256);
+//         ls = new LOC_S_Message(server_identifier, (*it)->port);
+// #ifdef DEBUG
+//         cerr << "server_identifier of loc s msg before sending: "<< ls->server_identifier <<endl;
+//         cerr << "port of loc s msg before sending: "<< ls->port <<endl;
+// #endif        
+//         ls->sendmsg(node);
+//     }
+// }

@@ -158,12 +158,12 @@ int main() {
 #endif
                             handle_loc_request_message(db, node);
                             break;
-                        case CACHE_LOC_REQUEST:
-#ifdef DEBUG
-                            cerr <<  "cache loc request message recieved\n";
-#endif
-                            handle_cache_loc_request_message(db, node);
-                            break;
+//                         case CACHE_LOC_REQUEST:
+// #ifdef DEBUG
+//                             cerr <<  "cache loc request message recieved\n";
+// #endif
+//                             handle_cache_loc_request_message(db, node);
+//                             break;
                         default:
                             // this suppose to be terminate message
                             // everything should end here, tell everybody to shut down, clean up
