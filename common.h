@@ -4,22 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// RPC const values
-#define RPC_BACKLOG 5
-#define INT_BYTE_PADDING 4
-#define SOCKET_DATA_CHUNK_SIZE 16
-#define DEFAULT_CHAR_ARR_SIZE 128
-
-// Const string define
-#define BINDER_ADDRESS_S "BINDER_ADDRESS"
-#define BINDER_PORT_S "BINDER_PORT"
-
-// Const char define
-#define TERMINATING_CHAR '\0'
-
-
-#define INT_SIZE sizeof(int)
-#define UNSIGNED_SHORT_SIZE sizeof(unsigned short)
 
 enum MessageType {
     TERMINATE = 0,

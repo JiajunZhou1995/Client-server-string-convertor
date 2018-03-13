@@ -172,13 +172,13 @@ void* client_request_handler(void* arg)
     recv(client_fd, buffer, msg_length - 3 * sizeof(int), MSG_WAITALL);
     
     // Get the function name
-    char *function_name = new char[DEFAULT_CHAR_ARR_SIZE];
-    int arg_size_tot = msg_length - 3 * sizeof(int) - DEFAULT_CHAR_ARR_SIZE;
+    char *function_name = new char[128];
+    int arg_size_tot = msg_length - 3 * sizeof(int) - 128;
     int *client_args = (int*) malloc(arg_size_tot);
 
     // Extract the function namd and args
-    memcpy(function_name, buffer, DEFAULT_CHAR_ARR_SIZE);
-    memcpy(client_args, buffer + DEFAULT_CHAR_ARR_SIZE, arg_size_tot);
+    memcpy(function_name, buffer, 128);
+    memcpy(client_args, buffer + 128, arg_size_tot);
     
     //
     int *arg_types = (int*) malloc(arg_type_length * sizeof(int));
@@ -226,7 +226,7 @@ void* client_request_handler(void* arg)
         send(client_fd, &msg_length, sizeof(int), 0);
         send(client_fd, &ret_msg_type, sizeof(MessageType), 0);
         send(client_fd, &arg_type_length, sizeof(int), 0);
-        send(client_fd, function_name, DEFAULT_CHAR_ARR_SIZE, 0);
+        send(client_fd, function_name, 128, 0);
         send(client_fd, arg_types, arg_type_length * 4, 0);
 
         for(int arg = 0; arg < arg_type_length; arg++)
@@ -277,11 +277,11 @@ int rpcInit()
 		return INIT_LOCAL_SOCKET_BIND_FAILURE;
 
 	// start listening
-	listen(rpc_sock_fd, RPC_BACKLOG);
+	listen(rpc_sock_fd, 5);
 
 	// Connect to binder
-    char* binder_address = getenv(BINDER_ADDRESS_S);
-    char* binder_port = getenv(BINDER_PORT_S);
+    char* binder_address = getenv("BINDER_ADDRESS");
+    char* binder_port = getenv("BINDER_PORT");
     
     // Validates that the address and port is set
     if(binder_address == NULL)
@@ -301,8 +301,8 @@ int rpcCall(char* name, int* argTypes, void** args)
     // Connect to binder
     // Get Binder's address & port
     if(binder_socket_fd <= 0){
-        char* binder_address = getenv(BINDER_ADDRESS_S);
-        char* binder_port = getenv(BINDER_PORT_S);
+        char* binder_address = getenv("BINDER_ADDRESS");
+        char* binder_port = getenv("BINDER_PORT");
 
         // Validates that the address and port is set
         if(binder_address == NULL)
@@ -319,7 +319,7 @@ int rpcCall(char* name, int* argTypes, void** args)
 		arg_types_length++;
 
     // length, LOC_REQUEST, name, argTypes
-	int msg_length = sizeof(int) + sizeof(MessageType) + DEFAULT_CHAR_ARR_SIZE + arg_types_length * sizeof(int);
+	int msg_length = sizeof(int) + sizeof(MessageType) + 128 + arg_types_length * sizeof(int);
 
 	// Sent the length & type
 	send(binder_socket_fd, &msg_length, sizeof(int), 0);
@@ -328,7 +328,7 @@ int rpcCall(char* name, int* argTypes, void** args)
 	send(binder_socket_fd, &msg_type, sizeof(MessageType), 0);
 
 	// Send the msg
-	send(binder_socket_fd, name, DEFAULT_CHAR_ARR_SIZE, 0);
+	send(binder_socket_fd, name, 128, 0);
 
 	send(binder_socket_fd, argTypes, arg_types_length * sizeof(int), 0);
 
@@ -341,13 +341,13 @@ int rpcCall(char* name, int* argTypes, void** args)
 	int res_type;
 	recv(binder_socket_fd, &res_type, sizeof(MessageType), 0);
 
-	char server_address[DEFAULT_CHAR_ARR_SIZE];
+	char server_address[128];
 	unsigned short server_port;
 	if(res_type == LOC_SUCCESS)
 	{
 		// successful response, get the address and port
-		recv(binder_socket_fd, server_address, DEFAULT_CHAR_ARR_SIZE, 0);
-		recv(binder_socket_fd, &server_port, UNSIGNED_SHORT_SIZE, 0);
+		recv(binder_socket_fd, server_address, 128, 0);
+		recv(binder_socket_fd, &server_port, sizeof(unsigned short), 0);
 	} else if (res_type == LOC_FAILURE)
 	{
 		// If failure, get the reason code and return it
@@ -382,7 +382,7 @@ int rpcCall(char* name, int* argTypes, void** args)
 	}
 
     // length EXECUTE, sizeofarg, name, argTypes, args
-	msg_length = sizeof(int) + sizeof(MessageType) + sizeof(int) + DEFAULT_CHAR_ARR_SIZE + arg_types_length * sizeof(int) + arg_size;
+	msg_length = sizeof(int) + sizeof(MessageType) + sizeof(int) + 128 + arg_types_length * sizeof(int) + arg_size;
 
 	// Send the message to server
 	// Message type and length
@@ -393,7 +393,7 @@ int rpcCall(char* name, int* argTypes, void** args)
     send(server_fd, &arg_types_length, sizeof(int), 0);
 
 	// function name and signiture
-	send(server_fd, name, DEFAULT_CHAR_ARR_SIZE, 0);
+	send(server_fd, name, 128, 0);
 	send(server_fd, argTypes, arg_types_length * sizeof(int), 0);
 
 	for(int arg = 0; arg < arg_types_length; arg++)
@@ -420,9 +420,9 @@ int rpcCall(char* name, int* argTypes, void** args)
 		char buffer[recv_msg_length - 3*sizeof(int)];
 		recv(server_fd, buffer, recv_msg_length - 3 * sizeof(int), MSG_WAITALL);
         
-        int arg_size_tot = msg_length - 3*sizeof(int) - DEFAULT_CHAR_ARR_SIZE;
+        int arg_size_tot = msg_length - 3*sizeof(int) - 128;
         int *client_args = (int*) malloc(arg_size_tot);
-        memcpy(client_args, buffer + DEFAULT_CHAR_ARR_SIZE, arg_size_tot);
+        memcpy(client_args, buffer + 128, arg_size_tot);
         
         int *arg_types = new int[arg_types_length * 4];
         memcpy(arg_types, client_args, arg_types_length * 4);
@@ -477,8 +477,8 @@ int rpcRegister(char* name, int* argTypes, skeleton f)
 
 	// Generate the msg
 	// Get the local host name & port number
-	char host_name[DEFAULT_CHAR_ARR_SIZE];
-	gethostname(host_name, DEFAULT_CHAR_ARR_SIZE);
+	char host_name[128];
+	gethostname(host_name, 128);
 
 	struct sockaddr_in sock_ai;
 	socklen_t sock_len = sizeof(sock_ai);
@@ -494,8 +494,8 @@ int rpcRegister(char* name, int* argTypes, skeleton f)
 	while(argTypes[arg_types_length])
 		arg_types_length++;
 
-    // int(size) + messagetype(type) + DEFAULT_CHAR_ARR_SIZE + unsigned short + DEFAULT_CHAR_ARR_SIZE + int_arr(arg_types)
-    int msg_length =  sizeof(int) + sizeof(MessageType) + DEFAULT_CHAR_ARR_SIZE*2 + sizeof(unsigned short) + arg_types_length * sizeof(int);
+    // int(size) + messagetype(type) + 128 + unsigned short + 128 + int_arr(arg_types)
+    int msg_length =  sizeof(int) + sizeof(MessageType) + 128*2 + sizeof(unsigned short) + arg_types_length * sizeof(int);
 
     send(binder_socket_fd, &msg_length, sizeof(int), 0);
 
@@ -503,10 +503,10 @@ int rpcRegister(char* name, int* argTypes, skeleton f)
     send(binder_socket_fd, &msg_type, sizeof(MessageType), 0);
 
     // Sending serverid, port, function_name, arg_type
-    send(binder_socket_fd, host_name, DEFAULT_CHAR_ARR_SIZE, 0);
+    send(binder_socket_fd, host_name, 128, 0);
     send(binder_socket_fd, &host_port, sizeof(unsigned short), 0);
 
-    send(binder_socket_fd, name, DEFAULT_CHAR_ARR_SIZE, 0);
+    send(binder_socket_fd, name, 128, 0);
     send(binder_socket_fd, argTypes, arg_types_length * sizeof(int), 0);
 
     int response_length;

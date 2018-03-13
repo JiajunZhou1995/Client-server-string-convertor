@@ -132,35 +132,35 @@ ReasonCode registerFunc(std::string name, int* argTypes, int argSize, std::strin
 void handleRegisterRequest(int clientSocketFd, int msgLength) {
     char buffer[msgLength];
     ReasonCode reason;
-    char responseMsg [INT_SIZE];
+    char responseMsg [sizeof(int)];
     // reads message to buffer
     int status = receiveMessage(clientSocketFd, msgLength, buffer);
     if (status == RECEIVE_ERROR) {
         // corrupt message
         reason = MESSAGE_CORRUPTED;
-        memcpy(responseMsg, &reason, INT_SIZE);
-        sendMessage(clientSocketFd, 3 * INT_SIZE, REGISTER_FAILURE, responseMsg);
+        memcpy(responseMsg, &reason, sizeof(int));
+        sendMessage(clientSocketFd, 3 * sizeof(int), REGISTER_FAILURE, responseMsg);
         return;
     }
 
-    char server[DEFAULT_CHAR_ARR_SIZE];
+    char server[128];
     unsigned short port;
-    char funcName[DEFAULT_CHAR_ARR_SIZE];
-    int argSize = ((msgLength - 2 * DEFAULT_CHAR_ARR_SIZE - UNSIGNED_SHORT_SIZE)/ INT_SIZE);
+    char funcName[128];
+    int argSize = ((msgLength - 2 * 128 - sizeof(unsigned short))/ sizeof(int));
     int *argTypes = new int[argSize];
 
     // reads server and function info
-    memcpy(server, buffer, DEFAULT_CHAR_ARR_SIZE);
-    memcpy(&port, buffer + DEFAULT_CHAR_ARR_SIZE, UNSIGNED_SHORT_SIZE);
-    memcpy(funcName, buffer + DEFAULT_CHAR_ARR_SIZE + UNSIGNED_SHORT_SIZE, DEFAULT_CHAR_ARR_SIZE);
-    memcpy(argTypes, buffer + 2 * DEFAULT_CHAR_ARR_SIZE + UNSIGNED_SHORT_SIZE, argSize * INT_SIZE);
+    memcpy(server, buffer, 128);
+    memcpy(&port, buffer + 128, sizeof(unsigned short));
+    memcpy(funcName, buffer + 128 + sizeof(unsigned short), 128);
+    memcpy(argTypes, buffer + 2 * 128 + sizeof(unsigned short), argSize * sizeof(int));
     
     std::string name(funcName);
     std::string serverId(server);
     
     reason = registerFunc(name, argTypes, argSize, serverId, port, clientSocketFd);
-    memcpy(responseMsg, &reason, INT_SIZE);
-    sendMessage(clientSocketFd, 3 * INT_SIZE, REGISTER_SUCCESS, responseMsg);
+    memcpy(responseMsg, &reason, sizeof(int));
+    sendMessage(clientSocketFd, 3 * sizeof(int), REGISTER_SUCCESS, responseMsg);
 }
 
 ServerLoc *lookupAvailableServer(std::string name, int *argTypes, int argSize) {
@@ -196,20 +196,20 @@ void handleLocationRequest(int clientSocketFd, int msgLength) {
     int status = receiveMessage(clientSocketFd, msgLength, buffer);
     if (status == RECEIVE_ERROR) {
         // corrupt message
-        char responseMsg [INT_SIZE];
+        char responseMsg [sizeof(int)];
         ReasonCode reason = MESSAGE_CORRUPTED;
-        memcpy(responseMsg, &reason, INT_SIZE);
-        sendMessage(clientSocketFd, 3 * INT_SIZE, LOC_FAILURE, responseMsg);
+        memcpy(responseMsg, &reason, sizeof(int));
+        sendMessage(clientSocketFd, 3 * sizeof(int), LOC_FAILURE, responseMsg);
         return;
     }
 
-    char funcName[DEFAULT_CHAR_ARR_SIZE];
-    int argSize = ((msgLength - DEFAULT_CHAR_ARR_SIZE) / INT_SIZE);
+    char funcName[128];
+    int argSize = ((msgLength - 128) / sizeof(int));
     int *argTypes = new int[argSize];
 
     // reads function name and args
-    memcpy(funcName, buffer, DEFAULT_CHAR_ARR_SIZE);
-    memcpy(argTypes, buffer + DEFAULT_CHAR_ARR_SIZE, argSize * INT_SIZE);
+    memcpy(funcName, buffer, 128);
+    memcpy(argTypes, buffer + 128, argSize * sizeof(int));
 
     std::string name(funcName);
 
@@ -217,16 +217,16 @@ void handleLocationRequest(int clientSocketFd, int msgLength) {
 
     if (!availServer) {
         // function not found, return failure
-        char responseMsg [INT_SIZE];
+        char responseMsg [sizeof(int)];
         ReasonCode reason = FUNCTION_NOT_FOUND;
-        memcpy(responseMsg, &reason, INT_SIZE);
-        sendMessage(clientSocketFd, 3 * INT_SIZE, LOC_FAILURE, responseMsg);
+        memcpy(responseMsg, &reason, sizeof(int));
+        sendMessage(clientSocketFd, 3 * sizeof(int), LOC_FAILURE, responseMsg);
     } else {
         // return server info if found
-        char responseMsg [DEFAULT_CHAR_ARR_SIZE + INT_SIZE];
-        memcpy(responseMsg, availServer->serverId.c_str(), DEFAULT_CHAR_ARR_SIZE);
-        memcpy(responseMsg + DEFAULT_CHAR_ARR_SIZE, &(availServer->port), UNSIGNED_SHORT_SIZE);
-        sendMessage(clientSocketFd, 2 * INT_SIZE + DEFAULT_CHAR_ARR_SIZE + UNSIGNED_SHORT_SIZE, LOC_SUCCESS, responseMsg);
+        char responseMsg [128 + sizeof(int)];
+        memcpy(responseMsg, availServer->serverId.c_str(), 128);
+        memcpy(responseMsg + 128, &(availServer->port), sizeof(unsigned short));
+        sendMessage(clientSocketFd, 2 * sizeof(int) + 128 + sizeof(unsigned short), LOC_SUCCESS, responseMsg);
     }
 }
 
@@ -313,13 +313,13 @@ void handleRequest(int clientSocketFd, fd_set *masterFds) {
     }
 
     if (msgType == REGISTER) {
-        handleRegisterRequest(clientSocketFd, msgLength - 2 * INT_SIZE);
+        handleRegisterRequest(clientSocketFd, msgLength - 2 * sizeof(int));
     } else if (msgType == LOC_REQUEST) {
-        handleLocationRequest(clientSocketFd, msgLength - 2 * INT_SIZE);
+        handleLocationRequest(clientSocketFd, msgLength - 2 * sizeof(int));
     } else if (msgType == TERMINATE) {
         // terminate and clean up
         for (int i = 0; i < serverQueue.size(); i++) {
-            sendMessage(serverQueue[i]->socketFd, 2 * INT_SIZE, TERMINATE, NULL);
+            sendMessage(serverQueue[i]->socketFd, 2 * sizeof(int), TERMINATE, NULL);
         }
         terminating = true;
     } else {
