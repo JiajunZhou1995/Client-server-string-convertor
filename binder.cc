@@ -14,7 +14,7 @@
 #include <map>
 #include <vector>
 #include "common.h"
-
+#include <list>
 #include <cstring>
 
 
@@ -85,18 +85,28 @@ bool operator == (const ServerLoc &l, const ServerLoc &r) {
 
 bool terminating;
 std::map <FuncSignature*, std::vector<ServerLoc *> > funcDict;
-std::vector<ServerLoc *> serverQueue;
+std::list<ServerLoc *> serverQueue;
 
 void registerServer(std::string serverId, unsigned short port, int socketFd) {
     ServerLoc *location = new ServerLoc(serverId, port, socketFd);
-    for (int i = 0; i < serverQueue.size(); i++) {
-        if (*(serverQueue[i]) == *location) {
+
+    for (std::list<ServerLoc *>::iterator it=serverQueue.begin(); it!=serverQueue.end(); ++it){
+        if (*it == location) {
             // server is registered and in queue
             return;
         }
     }
     // push the server to round robin queue
     serverQueue.push_back(location);
+
+    // for (int i = 0; i < serverQueue.size(); i++) {
+    //     if (*(serverQueue[i]) == *location) {
+    //         // server is registered and in queue
+    //         return;
+    //     }
+    // }
+    // // push the server to round robin queue
+    // serverQueue.push_back(location);
 }
 
 ReasonCode registerFunc(std::string name, int* argTypes, int argSize, std::string serverId, unsigned short port, int socketFd) {
@@ -181,7 +191,9 @@ ServerLoc *lookupAvailableServer(std::string name, int *argTypes, int argSize) {
                     }
                 }
                 // move the server to the back of the queue if cannot service the function
-                rotate(serverQueue.begin(), serverQueue.end()-1, serverQueue.end());
+                // rotate(serverQueue.begin(), serverQueue.end()-1, serverQueue.end());
+                serverQueue.pop_front();
+                serverQueue.push_back(server);
             }
 
 
@@ -318,9 +330,12 @@ void handleRequest(int clientSocketFd, fd_set *masterFds) {
         handleLocationRequest(clientSocketFd, msgLength - 2 * sizeof(int));
     } else if (msgType == TERMINATE) {
         // terminate and clean up
-        for (int i = 0; i < serverQueue.size(); i++) {
-            sendMessage(serverQueue[i]->socketFd, 2 * sizeof(int), TERMINATE, NULL);
+        for (std::list<ServerLoc *>::iterator it=serverQueue.begin(); it!=serverQueue.end(); ++it){
+            sendMessage((*it)->socketFd, 2 * sizeof(int), TERMINATE, NULL);
         }
+        // for (int i = 0; i < serverQueue.size(); i++) {
+        //     sendMessage(serverQueue[i]->socketFd, 2 * sizeof(int), TERMINATE, NULL);
+        // }
         terminating = true;
     } else {
     }
