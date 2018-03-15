@@ -33,7 +33,6 @@ std::vector<skeleton> skels;
 // std::queue<pthread_t *> execute_children;
 
 int connect_to(int port, const char* binder_host) {
-	assert(server_fd != -1);
 	struct hostent *host;
 	if (binder_host == NULL) {
 		return HOSTNAME_ERROR;
@@ -131,20 +130,20 @@ int sendRegisterInfo(char *name, int* argTypes) {
     {
     }
     int name_len = 64;
-    int total_len = sizeof(int) + sizeof(MessageType) + ip_len * sizeof(char) + sizeof(int) + name_len * sizeof(char) + i * sizeof(int);
+    //int total_len = sizeof(int) + sizeof(MessageType) + ip_len * sizeof(char) + sizeof(int) + name_len * sizeof(char) + i * sizeof(int);
     // send total length
-    send(binder_fd, &total_len, sizeof(int), 0);
+    //send(binder_fd, &total_len, sizeof(int), 0);
     MessageType r = REGISTER;
 	// send REGISTER
 	send(binder_fd,&r,sizeof(MessageType),0);
 	// send ip length and hostname
     
-	// send(binder_fd, &ip_len ,sizeof(int),0);
+	send(binder_fd, &ip_len ,sizeof(int),0);
 	send(binder_fd, hostname ,ip_len * sizeof(char),0);
 	// send  port number
 	send(binder_fd, &port,sizeof(int),0);
 	// send name length and name
-	//send(binder_fd,&name_len,sizeof(int),0);
+	send(binder_fd,&name_len,sizeof(int),0);
 	send(binder_fd, name ,name_len,0);
 	
 
@@ -153,18 +152,16 @@ int sendRegisterInfo(char *name, int* argTypes) {
 	send(binder_fd, argTypes, i * sizeof(int), 0);
 	// receive messageTpe returned from binder
 	recv(binder_fd,&r,sizeof(int),0);
-	recv(binder_fd,&i,sizeof(int),0);
-    ErrorMsg returnValue;
-    int ret = recv(binder_fd, &returnValue, sizeof(ErrorMsg), 0);
-    // switch (r) {
-	// 	case REGISTER_SUCCESS:
-	// 		return COMPLETE;
-	// 	case REGISTER_FAILURE:
-	// 		return returnValue;
-
-	// }
+	//recv(binder_fd,&i,sizeof(int),0);
+    recv(binder_fd, &r, sizeof(MessageType), 0);
+	if (r == REGISTER_SUCCESS) {
+		return COMPLETE;
+	} else {
+		return -1;
+	}
+	
 	// returnValue could be 0, positive for warning or negative for errors
-	return returnValue;
+
 	
 }
 int addProcedure(char *name, int* argTypes, skeleton f) {
@@ -219,8 +216,10 @@ int recvRequestFromBinder(int binder, int * port, char * hostname) {
 }
 void send_name_and_argtypes_from_client(int fd, int len, MessageType request, char * name, int * argTypes) {
 	send(fd,&request,sizeof(MessageType),0);
+	int func_len = 64;
 	// name 
-	send(fd,name,64 * sizeof(char),0);
+	send(fd,&func_len,sizeof(int),0);
+	send(fd,name,func_len * sizeof(char),0);
 	send(fd,&len,sizeof(int),0);
 	send(fd,argTypes,len * sizeof(int),0);
 }
@@ -277,7 +276,7 @@ int rpcCall(char* name, int* argTypes, void** args) {
 	request = EXECUTE;
 	send_name_and_argtypes_from_client(to_server, argType_length, request, name, argTypes);
 	//send length, type and arg of each
-	for (int i = 0; i < argType_length-1; i++) {
+	for (int i = 0; i < argType_length; i++) {
 		int arg_tp = (argTypes[i] >> 8) & 0xff; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		int arg_len = argTypes[i] & 0x0000FFFF;  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		send(to_server,&arg_len,sizeof(int),0);

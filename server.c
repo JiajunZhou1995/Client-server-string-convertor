@@ -1,13 +1,11 @@
 #include "rpc.h"
 #include "server_function_skels.h"
-
-
+#include <stdio.h>
 
 int main(int argc, char *argv[]) {
 
   /* create sockets and connect to the binder */
   rpcInit();
-
 
   int count0 = 3;
   int count1 = 5;
@@ -61,7 +59,7 @@ int main(int argc, char *argv[]) {
   rpcRegister("f3", argTypes3, *f3_Skel);
   rpcRegister("f4", argTypes4, *f4_Skel);
 
-  /* call rpcExecute */
+  // /* call rpcExecute */
   rpcExecute();
 
   /* return */

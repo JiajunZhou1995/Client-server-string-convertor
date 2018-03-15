@@ -1,0 +1,65 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "binder",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/binder",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "build binder"
+        },
+        {
+            "name": "server",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/server",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "BINDER_ADDRESS",
+                    "value": "Yixuans-MacBook-Pro.local"
+                },
+                {
+                    "name": "BINDER_PORT",
+                    "value": "50837"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "build server"
+        },
+        {
+            "name": "client",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/client",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "BINDER_ADDRESS",
+                    "value": "Yixuans-MacBook-Pro.local"
+                },
+                {
+                    "name": "BINDER_PORT",
+                    "value": "50837"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "build client"
+        }
+    ]
+}
