@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <algorithm>
 #include <map>
-#include <vector>
 #include "common.h"
 #include <list>
 #include <cstring>
@@ -84,7 +83,7 @@ bool operator == (const ServerLoc &l, const ServerLoc &r) {
 }
 
 bool terminating;
-std::map <FuncSignature*, std::vector<ServerLoc *> > funcDict;
+std::map <FuncSignature*, std::list<ServerLoc *> > funcDict;
 std::list<ServerLoc *> serverQueue;
 
 void registerServer(std::string serverId, unsigned short port, int socketFd) {
@@ -115,11 +114,11 @@ ReasonCode registerFunc(std::string name, int* argTypes, int argSize, std::strin
     FuncSignature *func = new FuncSignature(name, argTypes, argSize);
 
     // Look up function in the dictionary
-    for (std::map<FuncSignature *, std::vector<ServerLoc *> >::iterator it = funcDict.begin(); it != funcDict.end(); it ++) {
+    for (std::map<FuncSignature *, std::list<ServerLoc *> >::iterator it = funcDict.begin(); it != funcDict.end(); it ++) {
         if (*func == *(it->first)) {
             found = true;
-            for (int i = 0; i < it->second.size(); i++) {
-                if (*(it->second[i]) == *location) {
+            for (std::list<ServerLoc *>::iterator listit=it->second.begin(); listit!=it->second.end(); ++listit){
+                if (*listit == location) {
                     // override function
                     return FUNCTION_OVERRIDDEN;
                 }
@@ -153,6 +152,30 @@ void handleRegisterRequest(int clientSocketFd, int msgLength) {
         return;
     }
 
+    // int serverlength;
+    // recv(clientSocketFd,&serverlength,sizeof(int),0);
+    // char server[128];
+    // recv(clientSocketFd,&server,serverlength * sizeof(char),0);
+
+    // // get port
+    // int portlength;
+    // recv(clientSocketFd,&portlength,sizeof(int),0);
+    // int port;
+    // recv(clientSocketFd,&port,portlength,0);
+
+    // // get funcName
+    // int funcNamelength;
+    // recv(clientSocketFd,&funcNamelength,sizeof(int),0);
+    // char* funcName;
+    // recv(clientSocketFd,&funcName,funcNamelength,0);
+
+    // // get argType
+    // int argTypelength;
+    // recv(clientSocketFd,&argTypelength,sizeof(int),0);
+    // int* argType = new int[argTypelength/sizeof(int)];;
+    // recv(clientSocketFd,&argType,argTypelength,0);
+
+
     char server[128];
     unsigned short port;
     char funcName[128];
@@ -177,19 +200,29 @@ ServerLoc *lookupAvailableServer(std::string name, int *argTypes, int argSize) {
     ServerLoc *selectedServer = NULL;
     FuncSignature *func = new FuncSignature(name, argTypes, argSize);
 
-    for (std::map<FuncSignature *, std::vector<ServerLoc *> >::iterator it = funcDict.begin(); it != funcDict.end(); it ++) {
+    for (std::map<FuncSignature *, std::list<ServerLoc *> >::iterator it = funcDict.begin(); it != funcDict.end(); it ++) {
         if (*func == *(it->first)) {
-            std::vector<ServerLoc *> availServers = it->second;
+            std::list<ServerLoc *> availServers = it->second;
             // Look up server queue in round robin fashion
             for (int i = 0; i < serverQueue.size(); i++) {
                 ServerLoc * server = serverQueue.front();
-                for (int j = 0; j < availServers.size(); j++) {
-                    if (*server == *(availServers[j])) {
+
+                for (std::list<ServerLoc *>::iterator listit=availServers.begin(); listit!=availServers.end(); ++listit){
+                    if (*server == **listit) {
                         // found the first available server
                         selectedServer = server;
                         break;
                     }
                 }
+
+                // for (int j = 0; j < availServers.size(); j++) {
+                //     if (*server == *(availServers[j])) {
+                //         // found the first available server
+                //         selectedServer = server;
+                //         break;
+                //     }
+                // }
+
                 // move the server to the back of the queue if cannot service the function
                 // rotate(serverQueue.begin(), serverQueue.end()-1, serverQueue.end());
                 serverQueue.pop_front();
@@ -222,6 +255,18 @@ void handleLocationRequest(int clientSocketFd, int msgLength) {
     // reads function name and args
     memcpy(funcName, buffer, 128);
     memcpy(argTypes, buffer + 128, argSize * sizeof(int));
+
+    // // get funcName
+    // int funcNamelength;
+    // recv(clientSocketFd,&funcNamelength,sizeof(int),0);
+    // char* funcName;
+    // recv(clientSocketFd,&funcName,funcNamelength,0);
+
+    // // get argType
+    // int argTypelength;
+    // recv(clientSocketFd,&argTypelength,sizeof(int),0);
+    // int* argType = new int[argTypelength/sizeof(int)];;
+    // recv(clientSocketFd,&argType,argTypelength,0);
 
     std::string name(funcName);
 
