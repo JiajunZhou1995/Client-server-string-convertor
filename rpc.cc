@@ -226,8 +226,8 @@ int recvRequestFromBinder(int binder, int * port, char * hostname) {
 	MessageType answer;
 	recv(binder,&answer,sizeof(MessageType),0);
 	if (answer == LOC_SUCCESS) {
-		int ip_len;
-		recv(binder,&ip_len,sizeof(int),0);
+		int ip_len = 128;
+		//recv(binder,&ip_len,sizeof(int),0);
 		recv(binder,hostname,ip_len * sizeof(char),0);
 		// port number
 		recv(binder,&port,sizeof(int),0);
