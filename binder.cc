@@ -35,7 +35,6 @@ int sendMessage(int socket_fd,MessageType msg_type, char msg_data[])
     return 0;
 }
 
-//can be removed after clean up
 int receiveMessage(int socket_fd, int expect_len, char buf[])
 {
 	// Reads until expect_len is reached
@@ -61,30 +60,37 @@ struct FuncSignature {
     FuncSignature(std::string name, int* argTypes, int argSize) : name(name), argTypes(argTypes), argSize(argSize) {}
 };
 
-// bool operator == (const FuncSignature &l, const FuncSignature &r) {
-//     if (l.name == r.name && l.argSize == r.argSize) {
-//         int i = 0;
-//         while (i < l.argSize) {
-//             if (l.argTypes[i] != r.argTypes[i]) {
-//                 return false;
-//             }
-//             i++;
-//         }
-//         return true;
-//     }
-//     return false;
-// }
+bool operator == (const FuncSignature &l, const FuncSignature &r) {
+    if (l.name == r.name && l.argSize == r.argSize) {
+        int i = 0;
+        while (i < l.argSize) {
+            if (l.argTypes[i] != r.argTypes[i]) {
+                return false;
+            }
+            i++;
+        }
+        return true;
+    }
+    return false;
+}
 
 struct ServerLoc {
+<<<<<<< HEAD
     char* serverId;
     int port;
     int socketFd;
     ServerLoc(char * serverId, int port, int socketFd) : serverId(serverId), port(port), socketFd(socketFd) {}
+=======
+    std::string serverId;
+    unsigned short port;
+    int socketFd;
+    ServerLoc(std::string serverId, unsigned short port, int socketFd) : serverId(serverId), port(port), socketFd(socketFd) {}
+>>>>>>> parent of de88d6a... remove opertor ==
 };
 
-// bool operator == (const ServerLoc &l, const ServerLoc &r) {
-//     return l.serverId == r.serverId && l.port == r.port && l.socketFd == r.socketFd;
-// }
+bool operator == (const ServerLoc &l, const ServerLoc &r) {
+    return l.serverId == r.serverId && l.port == r.port && l.socketFd == r.socketFd;
+}
 
 bool terminating;
 std::map <FuncSignature*, std::list<ServerLoc *> > funcDict;
@@ -117,24 +123,25 @@ void registerFunc(std::string name, int *argTypes, int argSize, char * serverId,
 {
     bool found = false;
     ServerLoc *location = new ServerLoc(serverId, port, socketFd);
+<<<<<<< HEAD
     FuncSignature *func = new FuncSignature(name, argTypes, argSize/4);
+=======
+    FuncSignature *func = new FuncSignature(name, argTypes, argSize);
+
+>>>>>>> parent of de88d6a... remove opertor ==
     // Look up function in the dictionary
     for (std::map<FuncSignature *, std::list<ServerLoc *> >::iterator it = funcDict.begin(); it != funcDict.end(); it ++) {
-        if (func->name == it->first->name && func->argSize == it->first->argSize) {
+        if (*func == *(it->first)) {
             found = true;
-            for (int i = 0; i < func->argSize; i++){
-                if (func->argTypes[i] != it->first->argTypes[i]) {
-                    found = false;
-                    break;
-                }
-            }
-        }
-
-        if (found) {
             for (std::list<ServerLoc *>::iterator listit=it->second.begin(); listit!=it->second.end(); ++listit){
                 if (*listit == location) {
+<<<<<<< HEAD
                     // same function with same serverloc
                     return;
+=======
+                    // override function
+                    return FUNCTION_OVERRIDDEN;
+>>>>>>> parent of de88d6a... remove opertor ==
                 }
             }
             it->second.push_back(location);
@@ -142,7 +149,7 @@ void registerFunc(std::string name, int *argTypes, int argSize, char * serverId,
     }
 
     if (!found) {
-        // adds function to the dictionary
+        // adds function to the dictioonary
         funcDict[func].push_back(location);
 
         std::cout << "added function name:" << name << std::endl;
@@ -219,6 +226,7 @@ void handleRegisterRequest(int clientSocketFd) {
 
 ServerLoc *lookupAvailableServer(std::string name, int *argTypes, int argSize) {
     ServerLoc *selectedServer = NULL;
+<<<<<<< HEAD
     FuncSignature *func = new FuncSignature(name, argTypes, argSize/4);
     bool argmatch = false;
     for (std::map<FuncSignature *, std::list<ServerLoc *> >::iterator it = funcDict.begin(); it != funcDict.end(); it ++) {
@@ -237,15 +245,19 @@ ServerLoc *lookupAvailableServer(std::string name, int *argTypes, int argSize) {
         {
             argmatch = true;
         }
+=======
+    FuncSignature *func = new FuncSignature(name, argTypes, argSize);
+>>>>>>> parent of de88d6a... remove opertor ==
 
-        if (argmatch) {
+    for (std::map<FuncSignature *, std::list<ServerLoc *> >::iterator it = funcDict.begin(); it != funcDict.end(); it ++) {
+        if (*func == *(it->first)) {
             std::list<ServerLoc *> availServers = it->second;
             // Look up server queue in round robin fashion
             for (int i = 0; i < serverQueue.size(); i++) {
                 ServerLoc * server = serverQueue.front();
 
                 for (std::list<ServerLoc *>::iterator listit=availServers.begin(); listit!=availServers.end(); ++listit){
-                    if (server->serverId == (*listit)->serverId && server->port == (*listit)->port && server->socketFd == (*listit)->socketFd) {
+                    if (*server == **listit) {
                         // found the first available server
                         selectedServer = server;
                         break;
