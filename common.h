@@ -44,6 +44,7 @@ enum ErrorMsg
     FAIL_TO_ACCEPT = -12,
     MESSAGE_TYPE_ERROR = -13,
     INVALID_PORT = -15,
+    FAIL_TO_REGISTER = -16
 
 };
 

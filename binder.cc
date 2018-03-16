@@ -76,10 +76,10 @@ struct FuncSignature {
 // }
 
 struct ServerLoc {
-    std::string serverId;
+    char* serverId;
     int port;
     int socketFd;
-    ServerLoc(std::string serverId, int port, int socketFd) : serverId(serverId), port(port), socketFd(socketFd) {}
+    ServerLoc(char * serverId, int port, int socketFd) : serverId(serverId), port(port), socketFd(socketFd) {}
 };
 
 // bool operator == (const ServerLoc &l, const ServerLoc &r) {
@@ -90,7 +90,7 @@ bool terminating;
 std::map <FuncSignature*, std::list<ServerLoc *> > funcDict;
 std::list<ServerLoc *> serverQueue;
 
-void registerServer(std::string serverId, unsigned short port, int socketFd) {
+void registerServer(char *serverId, unsigned short port, int socketFd){
     ServerLoc *location = new ServerLoc(serverId, port, socketFd);
 
     for (std::list<ServerLoc *>::iterator it=serverQueue.begin(); it!=serverQueue.end(); ++it){
@@ -113,7 +113,8 @@ void registerServer(std::string serverId, unsigned short port, int socketFd) {
     // serverQueue.push_back(location);
 }
 
-void registerFunc(std::string name, int* argTypes, int argSize, std::string serverId, unsigned short port, int socketFd) {
+void registerFunc(std::string name, int *argTypes, int argSize, char * serverId, unsigned short port, int socketFd)
+{
     bool found = false;
     ServerLoc *location = new ServerLoc(serverId, port, socketFd);
     FuncSignature *func = new FuncSignature(name, argTypes, argSize/4);
@@ -168,7 +169,10 @@ void handleRegisterRequest(int clientSocketFd) {
     // }
 
     int serverlength;
-    recv(clientSocketFd,&serverlength,sizeof(int),0);
+    int status = recv(clientSocketFd,&serverlength,sizeof(int),0);
+    // if (status<0){
+    //     sendMessage(clientSocketFd, REGISTER_FAILURE, NULL);
+    // }
     char server[128];
     recv(clientSocketFd,&server,serverlength * sizeof(char),0);
 
@@ -204,10 +208,12 @@ void handleRegisterRequest(int clientSocketFd) {
     // memcpy(argTypes, buffer + 2 * 128 + sizeof(unsigned short), argSize * sizeof(int));
 
     std::string name(funcName);
-    std::string serverId(server);
-
+    char *serverId(server);
+ 
     char responseMsg[sizeof(int)];
     registerFunc(name, argType, argSize, serverId, port, clientSocketFd);
+
+    sendMessage(clientSocketFd, REGISTER_SUCCESS, NULL);
     std::cout << "register name:" << name << std::endl;
 }
 
@@ -259,10 +265,9 @@ ServerLoc *lookupAvailableServer(std::string name, int *argTypes, int argSize) {
                 serverQueue.pop_front();
                 serverQueue.push_back(server);
             }
-
-
         }
     }
+    std::cout << "selectedServerid: " << selectedServer->serverId << ", port: " << selectedServer->port << std::endl;
     return selectedServer;
 }
 
@@ -312,9 +317,9 @@ void handleLocationRequest(int clientSocketFd) {
         sendMessage(clientSocketFd, LOC_FAILURE, responseMsg);
     } else {
         // return server info if found
-        char responseMsg [128 + sizeof(int)];
-        memcpy(responseMsg, availServer->serverId.c_str(), 128);
-        memcpy(responseMsg + 128, &(availServer->port), sizeof(unsigned short));
+        char responseMsg [128 + 4];
+        memcpy(responseMsg, availServer->serverId, 128);
+        memcpy(responseMsg + 128, &(availServer->port), 4);
         sendMessage(clientSocketFd, LOC_SUCCESS, responseMsg);
     }
 }
@@ -404,6 +409,8 @@ void handleRequest(int clientSocketFd, fd_set *masterFds) {
     if (msgType == REGISTER) {
         handleRegisterRequest(clientSocketFd);
     } else if (msgType == LOC_REQUEST) {
+
+        std::cout << "handleLocationRequest" << std::endl;
         handleLocationRequest(clientSocketFd);
     } else if (msgType == TERMINATE) {
         // terminate and clean up

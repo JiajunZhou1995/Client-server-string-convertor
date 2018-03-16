@@ -31,7 +31,25 @@ struct Procedure
 std::vector<Procedure> func_container;
 std::vector<skeleton> skels;
 // std::queue<pthread_t *> execute_children;
-
+int connect_to_server(int port, char * host) {
+	//struct hostent *host;
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (fd < 0)
+	{
+		return INVALID_FD;
+	}
+	struct sockaddr_in addr;
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(host);
+	addr.sin_port = htons(port);
+	if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+	{
+		close(fd);
+		return FAIL_TO_CONNECT;
+	}
+	return fd;
+}
 int connect_to(int port, const char* binder_host) {
 	struct hostent *host;
 	if (binder_host == NULL) {
@@ -81,6 +99,15 @@ int rpcInit(void) {
 	if (binder_port == NULL) {
 		return INVALID_PORT;
 	}
+	// if (binder_hostname == NULL)
+	// {
+	// 	return HOSTNAME_ERROR;
+	// }
+	// host = gethostbyname(binder_host);
+	// if (host == NULL)
+	// {
+	// 	return HOSTNAME_ERROR;
+	// }
 	binder_fd = connect_to(atol(binder_port),binder_hostname);
 	if (binder_fd < 0) {
 		return binder_fd;
@@ -119,7 +146,7 @@ int sendRegisterInfo(char *name, int* argTypes) {
 	struct sockaddr_in sin;
 	socklen_t len = sizeof(sin);
 	getsockname(server_fd, (struct sockaddr *)&sin, &len);
-	size_t host_size = 256;
+	size_t host_size = 128;
 	char hostname[host_size];
 	gethostname(hostname, host_size);
 	int port = ntohs(sin.sin_port);
@@ -153,11 +180,10 @@ int sendRegisterInfo(char *name, int* argTypes) {
 	// receive messageTpe returned from binder
 	recv(binder_fd,&r,sizeof(int),0);
 	//recv(binder_fd,&i,sizeof(int),0);
-    recv(binder_fd, &r, sizeof(MessageType), 0);
 	if (r == REGISTER_SUCCESS) {
 		return COMPLETE;
 	} else {
-		return -1;
+		return FAIL_TO_REGISTER;
 	}
 	
 	// returnValue could be 0, positive for warning or negative for errors
@@ -262,16 +288,16 @@ int rpcCall(char* name, int* argTypes, void** args) {
 	// send(binder,name,64 * sizeof(char),0);
 	// send(binder,&i,sizeof(int),0);
 	// send(binder,argTypes,argType_length * sizeof(int),0);
-	char ip[256];
+	char * ip;
 	int port;
 	int ret = recvRequestFromBinder(binder,&port,ip);
 	if (ret < 0) {
 		// LOC_FAILURE
 		return ret;
 	}
-	int to_server = connect_to(port,ip);
+	int to_server = connect_to_server(port,ip);
 	if (to_server < 0) {
-		return FAIL_TO_CONNECT;
+		return to_server;
 	}
 	request = EXECUTE;
 	send_name_and_argtypes_from_client(to_server, argType_length, request, name, argTypes);
